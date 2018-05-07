@@ -6,8 +6,7 @@ nconf
     .env()
     .file(path.join(__dirname, './config.json'));
 
-
-var port = process.env.PORT || 3000;
+var port = process.env.PORT || nconf.get('PORT') || 3000;
 
 const app = require('./index.js')(function(key) { return nconf.get(key);}, null); 
 

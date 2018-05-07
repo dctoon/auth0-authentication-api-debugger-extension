@@ -7,14 +7,16 @@ const handlebars = require('handlebars');
 const Webtask = require('webtask-tools');
 const expressTools = require('auth0-extension-express-tools');
 const middlewares = require('auth0-extension-express-tools').middlewares;
-const auth0 = require('auth0-oauth2-express@1.2.0');
+const auth0 = require('auth0-oauth2-express');
 const tools = require('auth0-extension-tools');
 var _ = require('lodash');
 var config = require('auth0-extension-tools').config();
-const dashboardAdmins = require('./middleware/dashboardAdmins.js');
+
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
 
 var metadata = require('./webtask.json');
-var ManagementClient = require('auth0').ManagementClient;
+var AuthenticationClient = require('auth0').AuthenticationClient;
+var accessToken;
 
 module.exports = function (configProvider, storageProvider) {
     const utils = require('./lib/utils');
@@ -29,7 +31,34 @@ module.exports = function (configProvider, storageProvider) {
 
     app.use(require('./middleware/develop.js'));
 
-    app.use(dashboardAdmins(config('AUTH0_DOMAIN'), 'Authentication API Debugger Extension', config('AUTH0_RTA')));
+    app.use(function(req, res, next){
+
+        if(accessToken){
+            req.accessToken = accessToken;
+            return next();
+        }       
+        
+        var auth0 = new AuthenticationClient({
+            domain: config('AUTH0_DOMAIN').replace('https://', ''),
+            clientId: config('AUTH0_CLIENT_ID'),
+            clientSecret: config('AUTH0_CLIENT_SECRET')
+        });
+        
+        auth0.clientCredentialsGrant({
+        audience: `${config('AUTH0_DOMAIN')}/api/v2/`,
+        scope: 'read:clients read:client_keys'
+        }, function (err, response) {
+            if (err) {
+                // Handle error.
+                return next(err);
+            }
+            accessToken = response.access_token;
+            req.accessToken = accessToken;
+            next();
+        });
+    })
+
+    //app.use(dashboardAdmins(config('AUTH0_DOMAIN'), 'Authentication API Debugger Extension', config('AUTH0_RTA')));
 
     app.get('/pkce', function (req, res) {
         const verifier = utils.base64url(crypto.randomBytes(32));
@@ -62,14 +91,15 @@ module.exports = function (configProvider, storageProvider) {
         res.status(200).send(metadata);
     });
 
+    
     const renderIndex = function (req, res) {
         const headers = req.headers;
         delete headers['x-wt-params'];
 
-        res.send(index({
+        const data = {
             method: req.method,
-            domain: req.webtaskContext.data.AUTH0_DOMAIN,
-            baseUrl: expressTools.urlHelpers.getBaseUrl(req).replace('http://', 'https://'),
+            domain: req.webtaskContext.data.AUTH0_DOMAIN.replace('https://', ''),
+            baseUrl: expressTools.urlHelpers.getBaseUrl(req),
             headers: utils.syntaxHighlight(req.headers),
             body: utils.syntaxHighlight(req.body),
             query: utils.syntaxHighlight(req.query),
@@ -77,8 +107,11 @@ module.exports = function (configProvider, storageProvider) {
             samlResponse: utils.samlResponse(req.body && req.body.SAMLResponse),
             wsFedResult: utils.wsFedResult(req.body && req.body.wresult),
             id_token: utils.jwt(req.body && req.body.id_token),
-            access_token: utils.jwt(req.body && req.body.access_token)
-        }));
+            access_token: utils.jwt(req.body && req.body.access_token),
+            management_access_token: req.accessToken
+        };
+
+        res.send(index(data));
     };
 
     app.get('*', renderIndex);

@@ -43,11 +43,6 @@ module.exports = `<html lang="en">
       color: #EB5424;
     }
   </style>
-  <script type="text/javascript">
-    if (!sessionStorage.getItem("token")) {
-      window.location.href = '{{baseUrl}}/login';
-    }
-  </script>
 </head>
 <body>
 <div id="app">
@@ -288,6 +283,12 @@ module.exports = `<html lang="en">
                                   <p class="controls-info">Like the OAuth2 state parameter. Required for OIDC Implicit Flow.</p>
                                 </div>
                               </div>
+                              <div class="form-group"><label class="col-xs-2 control-label">Login Hint</label>
+                                <div class="col-xs-10">
+                                  <input id="login_hint" type="text" class="form-control" value="">
+                                  <p class="controls-info">Hint to the Authorization Server about the login identifier the End-User might use to log in</p>
+                                </div>
+                              </div>
                             </form>
                           </div>
                           <div id="other-flows" class="tab-pane">
@@ -455,6 +456,7 @@ function read() {
   $('#delegation_target').val(localStorage.getItem('auth_debugger_delegation_target'));
   $('#prompt').val(localStorage.getItem('auth_debugger_prompt') || '');
   $('#nonce').val(localStorage.getItem('auth_debugger_nonce') || '');
+  $('#login_hint').val(localStorage.getItem('auth_debugger_login_hint') || '');
   $('#refresh_token').val(localStorage.getItem('auth_debugger_refresh_token'));
   $('#response_mode').val(localStorage.getItem('auth_debugger_response_mode') || '');
   $('#response_type').val(localStorage.getItem('auth_debugger_response_type') || 'token');
@@ -486,6 +488,7 @@ function save() {
   localStorage.setItem('auth_debugger_password', $('#save_password').is(':checked') ? $('#save_password').val() : '');
   localStorage.setItem('auth_debugger_prompt', $('#prompt').val());
   localStorage.setItem('auth_debugger_nonce', $('#nonce').val());
+  localStorage.setItem('auth_debugger_login_hint', $('#login_hint').val());
   localStorage.setItem('auth_debugger_refresh_token', $('#refresh_token').val());
   localStorage.setItem('auth_debugger_response_mode', $('#response_mode').val());
   localStorage.setItem('auth_debugger_response_type', $('#response_type').val());
@@ -569,7 +572,7 @@ $(function () {
     url: 'https://{{domain}}/api/v2/clients',
     type: 'GET',
     headers: {
-      'Authorization': 'Bearer ' + sessionStorage.getItem("token")
+      'Authorization': 'Bearer {{management_access_token}}'
     }}).done(
       function(data) {
         clients = _.map(data, function(client) { return _.pick(client, ['client_id', 'client_secret', 'name'] )} );
@@ -578,12 +581,11 @@ $(function () {
         read();
         setSelectedClientSecrets();
     });
-
   if ("{{method}}" === 'POST' || (window.location.hash && window.location.hash.length > 1) || (window.location.search && window.location.search.length > 1 && window.location.search !== '?webtask_no_cache=1')) {
     $('#tabs a[href="#request"]').tab('show');
   }
   if (window.location.hash && window.location.hash.length > 1) {
-    $('#hash_fragment').load(window.location.origin + window.location.pathname + '/hash?' + window.location.hash.replace(/^\#/,""));
+    $('#hash_fragment').load(window.location.origin + window.location.pathname + 'hash?' + window.location.hash.replace(/^\#/,""));    
   }
   $('#client').change(function(e) {
     setSelectedClientSecrets();
@@ -781,6 +783,9 @@ $(function () {
         }
         if ($('#nonce').val() && $('#nonce').val().length) {
           options.nonce = $('#nonce').val();
+        }
+        if ($('#login_hint').val() && $('#login_hint').val().length) {
+          options.login_hint = $('#login_hint').val();
         }
         auth0.login(options);
       });
