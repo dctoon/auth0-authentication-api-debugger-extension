@@ -6,7 +6,7 @@ Create a config file `config.json` (cp the config.sample.json).
 `yarn start`
 
 
-# Usage
+# Usage (IGNORE)
 
 1. `npm init`
 2. `npm install express --save`
