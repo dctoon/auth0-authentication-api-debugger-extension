@@ -3,6 +3,7 @@
 Create a config file `config.json` (cp the config.sample.json).
 
 `yarn install`
+
 `yarn start`
 
 
