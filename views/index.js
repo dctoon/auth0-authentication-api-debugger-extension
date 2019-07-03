@@ -289,6 +289,16 @@ module.exports = `<html lang="en">
                                   <p class="controls-info">Hint to the Authorization Server about the login identifier the End-User might use to log in</p>
                                 </div>
                               </div>
+                              <div class="form-group"><label class="col-xs-2 control-label">Custom Param</label>
+                                <div class="col-xs-5">
+                                  <input id="custom_authorize_name" type="text" class="form-control" value="">
+                                  <p class="controls-info">Name</p>
+                                </div>
+                                <div class="col-xs-5">
+                                  <input id="custom_authorize_value" type="text" class="form-control" value="">
+                                  <p class="controls-info">Value</p>
+                                </div>
+                              </div>
                             </form>
                           </div>
                           <div id="other-flows" class="tab-pane">
@@ -457,6 +467,8 @@ function read() {
   $('#prompt').val(localStorage.getItem('auth_debugger_prompt') || '');
   $('#nonce').val(localStorage.getItem('auth_debugger_nonce') || '');
   $('#login_hint').val(localStorage.getItem('auth_debugger_login_hint') || '');
+  $('#custom_authorize_name').val(localStorage.getItem('auth_debugger_custom_authorize_name') || '');
+  $('#custom_authorize_value').val(localStorage.getItem('auth_debugger_custom_authorize_value') || '');
   $('#refresh_token').val(localStorage.getItem('auth_debugger_refresh_token'));
   $('#response_mode').val(localStorage.getItem('auth_debugger_response_mode') || '');
   $('#response_type').val(localStorage.getItem('auth_debugger_response_type') || 'token');
@@ -489,6 +501,8 @@ function save() {
   localStorage.setItem('auth_debugger_prompt', $('#prompt').val());
   localStorage.setItem('auth_debugger_nonce', $('#nonce').val());
   localStorage.setItem('auth_debugger_login_hint', $('#login_hint').val());
+  localStorage.setItem('auth_debugger_custom_authorize_name', $('#custom_authorize_name').val());
+  localStorage.setItem('auth_debugger_custom_authorize_value', $('#custom_authorize_value').val());
   localStorage.setItem('auth_debugger_refresh_token', $('#refresh_token').val());
   localStorage.setItem('auth_debugger_response_mode', $('#response_mode').val());
   localStorage.setItem('auth_debugger_response_type', $('#response_type').val());
@@ -501,9 +515,9 @@ function save() {
 }
 function bindClients() {
   _.each(clients, function(client) {
-    $('#client').append($('<option>', { 
+    $('#client').append($('<option>', {
         value: client.client_id,
-        text : client.name 
+        text : client.name
     }));
   })
 }
@@ -585,7 +599,7 @@ $(function () {
     $('#tabs a[href="#request"]').tab('show');
   }
   if (window.location.hash && window.location.hash.length > 1) {
-    $('#hash_fragment').load(window.location.origin + window.location.pathname + 'hash?' + window.location.hash.replace(/^\#/,""));    
+    $('#hash_fragment').load(window.location.origin + window.location.pathname + 'hash?' + window.location.hash.replace(/^\#/,""));
   }
   $('#client').change(function(e) {
     setSelectedClientSecrets();
@@ -595,8 +609,13 @@ $(function () {
     save();
     var url = 'https://' + $('#domain').val() + '/samlp/' + $('#client_id').val() + '?RelayState=' + encodeURIComponent($('#state').val());
     url = url + '&redirect_uri=' + encodeURIComponent(callbackUrl);
+
     if ($('#connection').val() && $('#connection').val().length) {
       url = url + '&connection=' + encodeURIComponent($('#connection').val());
+    }
+
+    if ($('#custom_authorize_name').val() && $('#custom_authorize_name').val().length) {
+      url = url + '&' + $('#custom_authorize_name').val() + '=' + encodeURIComponent($('#custom_authorize_value').val())
     }
     window.location.href = url;
   });
@@ -787,6 +806,10 @@ $(function () {
         if ($('#login_hint').val() && $('#login_hint').val().length) {
           options.login_hint = $('#login_hint').val();
         }
+        if ($('#custom_authorize_name').val() && $('#custom_authorize_name').val().length) {
+          options[$('#custom_authorize_name').val()] = $('#custom_authorize_value').val()
+        }
+        console.log(options);
         auth0.login(options);
       });
   });

@@ -21,6 +21,7 @@ coverage
 
 # config file
 /config.json
+/config.local.json
 
 # Compiled binary addons (http://nodejs.org/api/addons.html)
 build/Release
