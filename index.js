@@ -36,14 +36,14 @@ module.exports = function (configProvider, storageProvider) {
         if(accessToken){
             req.accessToken = accessToken;
             return next();
-        }       
-        
+        }
+
         var auth0 = new AuthenticationClient({
             domain: config('AUTH0_DOMAIN').replace('https://', ''),
             clientId: config('AUTH0_CLIENT_ID'),
             clientSecret: config('AUTH0_CLIENT_SECRET')
         });
-        
+
         auth0.clientCredentialsGrant({
         audience: `${config('AUTH0_DOMAIN')}/api/v2/`,
         scope: 'read:clients read:client_keys'
@@ -83,7 +83,8 @@ module.exports = function (configProvider, storageProvider) {
             request: utils.syntaxHighlight(request),
             response: utils.syntaxHighlight(req.body),
             id_token: utils.jwt(req.body && req.body.id_token),
-            access_token: utils.jwt(req.body && req.body.access_token)
+            access_token: utils.jwt(req.body && req.body.access_token),
+            refresh_token: req.body && req.body.refresh_token
         }));
     });
 
@@ -91,7 +92,7 @@ module.exports = function (configProvider, storageProvider) {
         res.status(200).send(metadata);
     });
 
-    
+
     const renderIndex = function (req, res) {
         const headers = req.headers;
         delete headers['x-wt-params'];
@@ -108,6 +109,7 @@ module.exports = function (configProvider, storageProvider) {
             wsFedResult: utils.wsFedResult(req.body && req.body.wresult),
             id_token: utils.jwt(req.body && req.body.id_token),
             access_token: utils.jwt(req.body && req.body.access_token),
+            refresh_token: utils.jwt(req.body && req.body.refresh_token),
             management_access_token: req.accessToken
         };
 

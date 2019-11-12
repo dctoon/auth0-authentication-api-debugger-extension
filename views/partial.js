@@ -35,6 +35,18 @@ module.exports = `
   </div>
 </div>
 {{/if}}
+{{#if refresh_token}}
+<div class="row">
+  <div class="col-xs-12">
+    <div>
+      <h5>Refresh Token</h5>
+    </div>
+  </div>
+  <div class="col-lg-12">
+    <pre class="json-object">{{{refresh_token}}}</pre>
+  </div>
+</div>
+{{/if}}
 {{#if id_token}}
 <div class="row">
   <div class="col-xs-12">
